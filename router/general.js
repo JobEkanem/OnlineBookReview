@@ -1,4 +1,5 @@
 const express = require('express');
+// CORRECTED PATH: Go up one directory to find booksdb.js
 let books = require("../booksdb.js"); // Import the books data
 let isValid = require("./auth_users.js").isValid; // Import isValid helper
 let users = require("./auth_users.js").users; // Import users array (for registration)
@@ -21,39 +22,46 @@ const getBooksDataWithCallback = (callback) => {
 };
 
 
-// Helper function to simulate asynchronous data fetching for a book by ISBN (using Promise for consistency with other parts)
+// Helper function to simulate asynchronous data fetching for a book by ISBN (returns a Promise)
 const getBookByIsbn = (isbn) => {
     return new Promise((resolve, reject) => {
-        const book = books[isbn];
-        if (book) {
-            resolve(book);
-        } else {
-            reject(new Error(`Book with ISBN ${isbn} not found.`));
-        }
+        // Simulate a small delay for the asynchronous operation
+        setTimeout(() => {
+            const book = books[isbn];
+            if (book) {
+                resolve(book); // Resolve the promise with the book data
+            } else {
+                reject(new Error(`Book with ISBN ${isbn} not found.`)); // Reject the promise with an error
+            }
+        }, 50); // Simulate a small delay (50 milliseconds)
     });
 };
 
 // Helper function to simulate asynchronous data fetching for books by author (using Promise)
 const getBooksByAuthor = (author) => {
     return new Promise((resolve, reject) => {
-        const matchingBooks = Object.values(books).filter(book => book.author === author);
-        if (matchingBooks.length > 0) {
-            resolve(matchingBooks);
-        } else {
-            reject(new Error(`No books found by author: ${author}.`));
-        }
+        setTimeout(() => {
+            const matchingBooks = Object.values(books).filter(book => book.author === author);
+            if (matchingBooks.length > 0) {
+                resolve(matchingBooks);
+            } else {
+                reject(new Error(`No books found by author: ${author}.`));
+            }
+        }, 50);
     });
 };
 
 // Helper function to simulate asynchronous data fetching for books by title (using Promise)
 const getBooksByTitle = (title) => {
     return new Promise((resolve, reject) => {
-        const matchingBooks = Object.values(books).filter(book => book.title.toLowerCase().includes(title.toLowerCase()));
-        if (matchingBooks.length > 0) {
-            resolve(matchingBooks);
-        } else {
-            reject(new Error(`No books found with title containing: ${title}.`));
-        }
+        setTimeout(() => {
+            const matchingBooks = Object.values(books).filter(book => book.title.toLowerCase().includes(title.toLowerCase()));
+            if (matchingBooks.length > 0) {
+                resolve(matchingBooks);
+            } else {
+                reject(new Error(`No books found with title containing: ${title}.`));
+            }
+        }, 50);
     });
 };
 
@@ -89,15 +97,19 @@ public_users.get('/', function (req, res) {
   });
 });
 
-// Get book details based on ISBN (Async/Await)
-public_users.get('/isbn/:isbn', async function (req, res) {
+// Get book details based on ISBN - USING PROMISES (.then().catch())
+public_users.get('/isbn/:isbn', function (req, res) {
   const isbn = req.params.isbn;
-  try {
-    const bookDetails = await getBookByIsbn(isbn); // Wait for the promise to resolve
-    return res.status(200).json(bookDetails);
-  } catch (error) {
-    return res.status(404).json({ message: error.message });
-  }
+  // Call the getBookByIsbn function, which returns a Promise
+  getBookByIsbn(isbn)
+    .then(bookDetails => {
+      // If the promise resolves successfully (book found), send the details
+      return res.status(200).json(bookDetails);
+    })
+    .catch(error => {
+      // If the promise rejects (book not found or other error), send an error response
+      return res.status(404).json({ message: error.message });
+    });
 });
 
 // Get book details based on author (Async/Await)
