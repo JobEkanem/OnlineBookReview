@@ -1,0 +1,26 @@
+{
+  "name": "onlinebookreview",
+  "version": "1.0.1",
+  "description": "A server-side online book review application with secure REST API using session and JWT authentication.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js"
+  },
+  "keywords": [
+    "nodejs",
+    "express",
+    "jwt",
+    "authentication",
+    "rest-api",
+    "book-review"
+  ],
+  "author": "Job Ekanem",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.1",
+    "express-session": "^1.17.3",
+    "jsonwebtoken": "^9.0.2",
+    "nodemon": "^3.1.10"
+  }
+}
