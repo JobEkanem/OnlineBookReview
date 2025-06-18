@@ -1,0 +1,136 @@
+const axios = require('axios'); // Ensure you have axios installed: npm install axios
+
+const BASE_URL = 'http://localhost:5000'; // Your Express server's base URL
+
+async function runTests() {
+    console.log('--- Starting API Tests ---');
+
+    // Test 1: Get All Books (Public Endpoint)
+    console.log('\n--- Test: Get All Books ---');
+    try {
+        const response = await axios.get(`${BASE_URL}/`);
+        console.log('GET / Response Status:', response.status);
+        console.log('GET / Response Data (first 2 books):', Object.values(response.data).slice(0, 2));
+        if (response.status === 200 && Object.keys(response.data).length > 0) {
+            console.log('GET / Test Passed: Successfully retrieved books.');
+        } else {
+            console.error('GET / Test Failed: No books or unexpected status.');
+        }
+    } catch (error) {
+        console.error('GET / Test Failed:', error.message);
+    }
+
+    // Test 2: Register a New User (Public Endpoint)
+    console.log('\n--- Test: Register New User ---');
+    const registerData = {
+        username: 'testuser_new', // Use a unique username for each test run or handle cleanup
+        password: 'testpassword123'
+    };
+    try {
+        const response = await axios.post(`${BASE_URL}/register`, registerData);
+        console.log('POST /register Response Status:', response.status);
+        console.log('POST /register Response Data:', response.data);
+        if (response.status === 200 && response.data.message.includes('successfully registered')) {
+            console.log('POST /register Test Passed: User registered successfully.');
+        } else {
+            console.error('POST /register Test Failed: Could not register user.');
+        }
+    } catch (error) {
+        if (error.response && error.response.status === 409) {
+            console.warn('POST /register Test Warning: User already exists. This is expected if running multiple times.');
+        } else {
+            console.error('POST /register Test Failed:', error.message);
+        }
+    }
+
+    // Test 3: User Login (Authenticated Endpoint - will get a session cookie)
+    console.log('\n--- Test: User Login ---');
+    let loginToken = '';
+    const loginData = {
+        username: 'testuser_new', // Use the username registered above
+        password: 'testpassword123'
+    };
+    try {
+        const response = await axios.post(`${BASE_URL}/customer/login`, loginData);
+        console.log('POST /customer/login Response Status:', response.status);
+        console.log('POST /customer/login Response Data:', response.data);
+        if (response.status === 200 && response.data.token) {
+            console.log('POST /customer/login Test Passed: User logged in and received token.');
+            loginToken = response.data.token;
+        } else {
+            console.error('POST /customer/login Test Failed: Could not log in user.');
+        }
+    } catch (error) {
+        console.error('POST /customer/login Test Failed:', error.message);
+    }
+
+    // Test 4: Add/Modify Review (Authenticated Endpoint)
+    console.log('\n--- Test: Add/Modify Review ---');
+    if (loginToken) { // Only run if login was successful
+        const isbnToReview = 1; // Example ISBN
+        const reviewText = 'This is a test review from automated script!';
+        try {
+            // Note: axios sends query params as 'params' option
+            const response = await axios.put(`${BASE_URL}/customer/auth/review/${isbnToReview}`, null, {
+                params: { review: reviewText },
+                headers: {
+                    // In a real scenario, you might send Authorization: Bearer token,
+                    // but our Express session handles it via cookies implicitly after login.
+                    // If you were using pure JWT, you'd add: 'Authorization': `Bearer ${loginToken}`
+                }
+            });
+            console.log(`PUT /customer/auth/review/${isbnToReview} Response Status:`, response.status);
+            console.log(`PUT /customer/auth/review/${isbnToReview} Response Data:`, response.data);
+            if (response.status === 200 && response.data.message.includes('successfully')) {
+                console.log('PUT /customer/auth/review Test Passed: Review added/modified.');
+            } else {
+                console.error('PUT /customer/auth/review Test Failed: Could not add/modify review.');
+            }
+        } catch (error) {
+            console.error('PUT /customer/auth/review Test Failed:', error.message);
+        }
+    } else {
+        console.log('PUT /customer/auth/review Test Skipped: Login failed.');
+    }
+
+    // Test 5: Get Book Reviews (Public Endpoint - to verify review added)
+    console.log('\n--- Test: Get Book Reviews (Verification) ---');
+    try {
+        const response = await axios.get(`${BASE_URL}/review/1`);
+        console.log('GET /review/1 Response Status:', response.status);
+        console.log('GET /review/1 Response Data:', response.data);
+        if (response.status === 200 && Object.keys(response.data).length > 0) {
+            console.log('GET /review/1 Test Passed: Successfully retrieved reviews.');
+        } else {
+            console.error('GET /review/1 Test Failed: No reviews or unexpected status.');
+        }
+    } catch (error) {
+        console.error('GET /review/1 Test Failed:', error.message);
+    }
+
+
+    // Test 6: Delete Review (Authenticated Endpoint)
+    console.log('\n--- Test: Delete Review ---');
+    if (loginToken) { // Only run if login was successful
+        const isbnToDeleteReview = 1; // Example ISBN
+        try {
+            const response = await axios.delete(`${BASE_URL}/customer/auth/review/${isbnToDeleteReview}`);
+            console.log(`DELETE /customer/auth/review/${isbnToDeleteReview} Response Status:`, response.status);
+            console.log(`DELETE /customer/auth/review/${isbnToDeleteReview} Response Data:`, response.data);
+            if (response.status === 200 && response.data.message.includes('deleted successfully')) {
+                console.log('DELETE /customer/auth/review Test Passed: Review deleted.');
+            } else {
+                console.error('DELETE /customer/auth/review Test Failed: Could not delete review.');
+            }
+        } catch (error) {
+            console.error('DELETE /customer/auth/review Test Failed:', error.message);
+        }
+    } else {
+        console.log('DELETE /customer/auth/review Test Skipped: Login failed.');
+    }
+
+    console.log('\n--- All API Tests Completed ---');
+}
+
+// Run the tests
+runTests();
